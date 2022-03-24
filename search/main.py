@@ -13,7 +13,7 @@ import json
 # If you want to separate your code into separate files, put them
 # inside the `search` directory (like this one and `util.py`) and
 # then import from them like this:
-from search.util import print_board, print_coordinate
+from search.util import astar, print_board, print_coordinate
 
 def main():
     print(sys.argv[1])
@@ -32,12 +32,21 @@ def main():
     # usage information).
     print(data)
     board_dict = defaultdict(str)
+
     for item in data['board']:
         board_dict[tuple([item[1], item[2]])] = item[0]
     board_dict[tuple(data['start'])] = 'start'
     board_dict[tuple(data['goal'])] = 'goal'
     
-    print(board_dict)
 
     print_board(data['n'], board_dict)
-    print_coordinate(1, 2)
+    result = astar(tuple(data['start']), tuple(data['goal']), board_dict, data['n'])
+
+    print(len(result))
+    if len(result):
+        for item in result[::-1]:
+            if board_dict[item] == "":
+                board_dict[item] = 'r'
+            print(item)
+
+    print_board(data['n'], board_dict)

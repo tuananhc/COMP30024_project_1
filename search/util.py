@@ -6,7 +6,10 @@ This module contains some helper functions for printing actions and boards.
 Feel free to use and/or modify them to help you develop your program.
 """
 
+from collections import defaultdict
 from itertools import islice
+
+from sklearn import neighbors
 
 def apply_ansi(str, bold=True, color=None):
     """
@@ -146,3 +149,70 @@ def print_board(n, board_dict, message="", ansi=False, **kwargs):
 
     # Print to terminal (with optional args forwarded)
     print(output, **kwargs)
+
+def get_neighbours(start, board, n):
+    neighbours = []
+    if start[0] > 0 and start[1] < n:
+        if board[tuple([start[0] - 1, start[1] + 1])] != "b":
+            neighbours.append(tuple([start[0] - 1, start[1] + 1]))
+    if start[0] < n and start[1] > 0:
+        if board[tuple([start[0] + 1, start[1] - 1])] != "b":
+            neighbours.append(tuple([start[0] + 1, start[1] - 1]))
+    if start[0] > 0:
+        if board[tuple([start[0] - 1, start[1]])] != "b":
+            neighbours.append(tuple([start[0] - 1, start[1]]))
+    if start[0] < n:
+        if board[tuple([start[0] + 1, start[1]])] != "b":
+            neighbours.append(tuple([start[0] + 1, start[1]]))
+    if start[1] > 0:
+        if board[tuple([start[0], start[1] - 1])] != "b":
+            neighbours.append(tuple([start[0], start[1] - 1]))
+    if start[1] < n:
+        if board[tuple([start[0], start[1] + 1])] != "b":
+            neighbours.append(tuple([start[0], start[1] + 1]))
+    return neighbours
+
+def heuristics(start, end):
+    return abs(start[0] - end[0]) + abs(start[1] - end[1])
+
+def astar(start, end, board, n):
+    stack = [start]
+    visited = defaultdict(bool)
+    distance = defaultdict(int)
+    visited[start] = True
+    order = []
+    prev = {}
+    found = False
+
+    while len(stack) > 0 and not found:
+        min = distance[stack[0]] + heuristics(stack[0], end)
+        index = 0
+        for i in range(1, len(stack)):
+            if distance[stack[i]] + heuristics(stack[i], end) < min:
+                index = i
+                min = distance[stack[i]]  + heuristics(stack[i], end)
+
+        node = stack.pop(index)
+        order.append(node)
+        neighbours = get_neighbours(node, board, n - 1)
+        for i in range(len(neighbours)):
+            if neighbours[i][0] == end[0] and neighbours[i][1] == end[1]:
+                order.append(neighbours[i])
+                prev[neighbours[i]] = node
+                found = True
+                break
+            if not visited[neighbours[i]] and neighbours[i] not in stack:
+                distance[neighbours[i]] = distance[node] + 1
+                prev[neighbours[i]] = node
+                stack.append(neighbours[i])
+        visited[node] = True
+
+    if found:
+        cur = order[-1]
+        result = [cur]
+        while cur != start:
+            cur = prev[cur]
+            result.append(cur)
+        return result
+    
+    return []
